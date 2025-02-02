@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "843423826355",
+    "project_id": "rapido-cab-with-admin",
+    "storage_bucket": "rapido-cab-with-admin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843423826355:android:e75be1969db7e732b80bc6",
+        "android_client_info": {
+          "package_name": "com.rajoan.usersapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCaHdJVg_TDRArSohhLcKZXtmZV33AEgUE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

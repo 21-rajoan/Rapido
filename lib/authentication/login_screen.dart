@@ -1,5 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:user_app/authentication/signup_screen.dart';
+import 'package:user_app/global/global_var.dart';
+import 'package:user_app/methods/commons_methods.dart';
+import 'package:user_app/pages/home_page.dart';
+import 'package:user_app/widgets/loading_dialog.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +17,73 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   TextEditingController emailTextEditingController = TextEditingController();
   TextEditingController passworTextEditingController = TextEditingController();
+  CommonsMethods cMethods = CommonsMethods();
+
+  checkIfNetworkIsAvailable() {
+    cMethods.checkConnectivity(context);
+
+    signInFormValidation();
+  }
+
+  signInFormValidation() {
+    if (!emailTextEditingController.text.contains("@")) {
+      cMethods.displaySnackBar("please write valid email.", context);
+    } else if (passworTextEditingController.text.trim().length < 5) {
+      cMethods.displaySnackBar(
+          "your name must be atleast 6 or more charecter.", context);
+    } else {
+      signInUser();
+    }
+  }
+
+  signInUser() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) =>
+          LoadingDialog(messageText: "Allowing you to Login..."),
+    );
+
+    final User? userFirebase = (await FirebaseAuth.instance
+            .signInWithEmailAndPassword(
+      email: emailTextEditingController.text.trim(),
+      password: passworTextEditingController.text.trim(),
+    )
+            .catchError((errorMsg) {
+      Navigator.pop(context);
+      cMethods.displaySnackBar(errorMsg.toString(), context);
+    }))
+        .user;
+
+    if (!context.mounted) return;
+    Navigator.pop(context);
+
+    if (userFirebase != null) {
+      DatabaseReference usersRef = FirebaseDatabase.instance
+          .ref()
+          .child('users')
+          .child(userFirebase.uid);
+      usersRef.once().then((snap) {
+        if (snap.snapshot.value != null) {
+          if ((snap.snapshot.value as Map)["blockStatus"] == 'no') {
+            userName = (snap.snapshot.value as Map)["name"];
+            Navigator.push(
+                context, MaterialPageRoute(builder: (c) => HomePage()));
+          } else {
+            FirebaseAuth.instance.signOut();
+            cMethods.displaySnackBar(
+                "you are blocked. Contact admin: rajoantamjid.21@gmail.com",
+                context);
+          }
+        } else {
+          FirebaseAuth.instance.signOut();
+          cMethods.displaySnackBar(
+              "your record do not exists as a User.", context);
+        }
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,7 +141,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       height: 32,
                     ),
                     ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        checkIfNetworkIsAvailable();
+                      },
                       style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.purple,
                           padding: const EdgeInsets.symmetric(

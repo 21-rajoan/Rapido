@@ -1,6 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:user_app/authentication/login_screen.dart';
 import 'package:user_app/methods/commons_methods.dart';
+import 'package:user_app/pages/home_page.dart';
+import 'package:user_app/widgets/loading_dialog.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,6 +23,58 @@ class _SignUpScreenState extends State<SignUpScreen> {
   CommonsMethods cMethods = CommonsMethods();
   checkIfNetworkIsAvailable() {
     cMethods.checkConnectivity(context);
+
+    signUpFormValidation();
+  }
+
+  signUpFormValidation() {
+    if (userNameTextEditingController.text.trim().length < 3) {
+      cMethods.displaySnackBar(
+          "your name must be atleast 4 or more charecter.", context);
+    } else if (userPhoneTextEditingController.text.trim().length < 7) {
+      cMethods.displaySnackBar(
+          "your name must be atleast 7 or more charecter.", context);
+    } else if (!emailTextEditingController.text.contains("@")) {
+      cMethods.displaySnackBar("please write valid email.", context);
+    } else if (passworTextEditingController.text.trim().length < 5) {
+      cMethods.displaySnackBar(
+          "your name must be atleast 6 or more charecter.", context);
+    } else {
+      registerNewUser();
+    }
+  }
+
+  registerNewUser() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) =>
+          LoadingDialog(messageText: "Registering your account..."),
+    );
+    final User? userFirebase = (await FirebaseAuth.instance
+            .createUserWithEmailAndPassword(
+      email: emailTextEditingController.text.trim(),
+      password: passworTextEditingController.text.trim(),
+    )
+            .catchError((errorMsg) {
+      Navigator.pop(context);
+      cMethods.displaySnackBar(errorMsg.toString(), context);
+    }))
+        .user;
+    if (!context.mounted) return;
+    Navigator.pop(context);
+
+    DatabaseReference usersRef =
+        FirebaseDatabase.instance.ref().child('users').child(userFirebase!.uid);
+    Map userDataMap = {
+      "name": userNameTextEditingController.text.trim(),
+      "email": emailTextEditingController.text.trim(),
+      "phone": userPhoneTextEditingController.text.trim(),
+      "id": userFirebase.uid,
+      "blockStatus": "no",
+    };
+    usersRef.set(userDataMap);
+    Navigator.push(context, MaterialPageRoute(builder: (c) => HomePage()));
   }
 
   @override
